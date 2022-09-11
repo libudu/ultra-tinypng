@@ -34,8 +34,21 @@ const options = {
   }
 };
 
-fileList(root);
+const taskManager = {
+  taskList: [],
+  taskFinish: () => {
+    const task = taskManager.taskList.shift();
+    if(task) {
+      task();
+    }
+  },
+  maxParallel: 20,
+  start: () => {
+    taskManager.taskList.slice(0, taskManager.maxParallel).forEach(task => task());
+  },
+}
 
+startFromFolder(root);
 
 // 生成随机IP， 赋值给 X-Forwarded-For
 function getRandomIP() {
@@ -43,41 +56,61 @@ function getRandomIP() {
 }
 
 // 获取文件列表
-function fileList(folder) {
-  fs.readdir(folder, (err, files) => {
-    if (err) console.error(err);
-    files.forEach(file => {
-      fileFilter(path.join(folder, file));
+function startFromFolder(folder) {
+  // 遍历搜索所有符合条件的文件
+  const dirList = [folder]
+  const fileList = [];
+  for(let i = 0; i < dirList.length; i++) {
+    const dirPath = dirList[i];
+    const dirContentList = fs.readdirSync(dirPath);
+    dirContentList.forEach(file => {
+      file = path.join(dirPath, file);
+      const stats = fs.statSync(file);
+      // 目录
+      if(stats.isDirectory(file)) {
+        dirList.push(file);
+      }
+      // 文件
+      else {
+        const result = fileFilter(stats, file);
+        if(result) {
+          fileList.push(file);
+        }
+      }
     });
-  });
+  }
+  // 形成任务列表
+  taskManager.taskList = fileList.map(file => (() => fileUpload(file)));
+  taskManager.start();
 }
 
-// 过滤文件格式，返回所有jpg,png图片
-function fileFilter(file) {
-  fs.stat(file, (err, stats) => {
-    if (err) return console.error(err);
-    if (
-      // 必须是文件，小于5MB，后缀 jpg||png
-      stats.size <= max &&
-      stats.isFile() &&
-      exts.includes(path.extname(file))
-    ) {
-      
-      // 通过 X-Forwarded-For 头部伪造客户端IP
-      options.headers['X-Forwarded-For'] = getRandomIP();
-
-      fileUpload(file); // console.log('可以压缩：' + file);
+// 过滤文件格式，返回true false
+function fileFilter(stats, file) {
+  // 大小、格式
+  if(
+    stats.size <= max &&
+    stats.isFile() &&
+    exts.includes(path.extname(file))
+  ) {
+    // 是否已输出过
+    const outputPath = path.join(outputDir, file.replace(root, ''));
+    if(fs.existsSync(outputPath)) {
+      console.log(`输出路径${outputPath}已存在文件，跳过压缩。`);
+    } else {
+      return true;
     }
-    if (stats.isDirectory()) {
-      fileList(file + '/')
-    };
-  });
+  } else {
+    console.error(`文件${file}不符合文件规范，尺寸大于5mb或不是png/jpg文件`);
+  }
+  return false;
 }
 
 // 异步API,压缩图片
 // {"error":"Bad request","message":"Request is invalid"}
 // {"input": { "size": 887, "type": "image/png" },"output": { "size": 785, "type": "image/png", "width": 81, "height": 81, "ratio": 0.885, "url": "https://tinypng.com/web/output/7aztz90nq5p9545zch8gjzqg5ubdatd6" }}
 function fileUpload(img) {
+  // 通过 X-Forwarded-For 头部伪造客户端IP
+  options.headers['X-Forwarded-For'] = getRandomIP();
   var req = https.request(options, function(res) {
     res.on('data', buf => {
       let obj = JSON.parse(buf.toString());
@@ -95,6 +128,7 @@ function fileUpload(img) {
   });
   req.end();
 }
+
 // 该方法被循环调用,请求图片数据
 function fileUpdate(imgpath, obj) {
   imgpath = path.join(outputDir, imgpath.replace(root, ''));
@@ -118,8 +152,9 @@ function fileUpdate(imgpath, obj) {
         console.log(
           `[${imgpath}] \n 压缩成功，原始大小-${obj.input.size}，压缩大小-${
             obj.output.size
-          }，优化比例-${obj.output.ratio}`
+          }，优化比例-${obj.output.ratio}。剩余任务${taskManager.taskList.length}。`
         );
+        taskManager.taskFinish();
       });
     });
   });
