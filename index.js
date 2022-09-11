@@ -15,10 +15,10 @@ const { URL } = require('url');
 
 const cwd = process.cwd();
 
-const root = cwd;
+const root = path.join(cwd, "source");
+const outputDir = path.join(cwd , 'output');
   exts = ['.jpg', '.png'],
   max = 5200000; // 5MB == 5242848.754299136
-
 
 const options = {
   method: 'POST',
@@ -68,7 +68,9 @@ function fileFilter(file) {
 
       fileUpload(file); // console.log('可以压缩：' + file);
     }
-    // if (stats.isDirectory()) fileList(file + '/');
+    if (stats.isDirectory()) {
+      fileList(file + '/')
+    };
   });
 }
 
@@ -95,11 +97,11 @@ function fileUpload(img) {
 }
 // 该方法被循环调用,请求图片数据
 function fileUpdate(imgpath, obj) {
-  const outputDir = path.join(cwd , 'output');
-  imgpath = path.join(cwd , 'output', imgpath.replace(cwd, ''));
+  imgpath = path.join(outputDir, imgpath.replace(root, ''));
 
-  if(!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir);
+  const lastDirPath = imgpath.split(path.sep).slice(0, -1).join(path.sep);
+  if(!fs.existsSync(lastDirPath)) {
+    fs.mkdirSync(lastDirPath, { recursive: true });
   }
 
   let options = new URL(obj.output.url);
