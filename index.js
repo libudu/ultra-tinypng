@@ -40,11 +40,17 @@ const taskManager = {
     const task = taskManager.taskList.shift();
     if(task) {
       task();
+    } else {
+      console.log("所有任务处理完成！");
+      process.openStdin();
     }
   },
   maxParallel: 20,
   start: () => {
-    taskManager.taskList.slice(0, taskManager.maxParallel).forEach(task => task());
+    const initCount = taskManager.taskList.slice(0, taskManager.maxParallel).length;
+    for(let i = 0; i < initCount; i++) {
+      taskManager.taskList.shift()();
+    }
   },
 }
 
@@ -78,6 +84,10 @@ function startFromFolder(folder) {
         }
       }
     });
+  }
+  if(fileList.length == 0) {
+    console.log("当前没有需可以处理的图片，请退出");
+    process.openStdin();
   }
   // 形成任务列表
   taskManager.taskList = fileList.map(file => (() => fileUpload(file)));
@@ -116,6 +126,7 @@ function fileUpload(img) {
       let obj = JSON.parse(buf.toString());
       if (obj.error) {
         console.log(`[${img}]：压缩失败！报错：${obj.message}`);
+        taskManager.taskFinish();
       } else {
         fileUpdate(img, obj);
       }
