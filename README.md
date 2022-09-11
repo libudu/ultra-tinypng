@@ -1,25 +1,24 @@
 ## 初衷
-[tinypng](https://tinypng.com/) 网页版，其实是挺方便的。但是他有上传图片数量的限制，比如每天只能上传 20 张，如果超过这个数量，就会断断续续的出现 `Too many files uploaded at once` 错误 。所以才决定使用 Node 来开发一个绕过数量限制的 npm 包。
+本项目基于[super-tinypng](https://github.com/zhanyuzhang/super-tinypng)，在原项目基础上加入了打包开箱即用、递归目录、线程池、重复跳过的功能。
+项目的原理是程序化处理文件，调用[tinypng](https://tinypng.com/)的接口进行文件压缩。
 
+## 教程
+1、将PNG或JPG图片文件（可以是多层文件夹）放到source目录下。确保图片后缀名正确且小于5MB。
 
-## 使用方法
-安装：
-```bash
-npm i super-tinypng -g # or yarn global add super-tinypng
-```
+2、双击exe运行，运行过程中会有提示。
 
-然后，在命令行进入到你想要压缩图片的目录，执行：
-```bash
-super-tinypng
-```
+3、运行完成的结果输出到output目录中。
 
-## 说明
-- tinypng 默认是会对用户上传数量有限制的，使用了 `X-Forwarded-For` 头绕过该限制
-- 为了简化，不可以递归遍历文件夹
-- 为了简化，不支持配置，只能压缩当前目录下的图片，并且会在当前目录下创建一个 output 目录，把压缩成功的图片放到里面
+4、如果运行过程中出现卡住较长时间没有任何输出结果的情况，可以关闭程序重新运行，已经输出的文件再次执行时会自动跳过。
 
-## 免责声明
+## 注意
+由于项目本质是调用tinypng的接口，绕过了原网站的ip限制，所以请勿滥用本项目。滥用本项目的结果必然是造成tinypng官方的损失，进而导致加强ip限制，所有人都无法使用。
+具体来说包含以下几点。
 
-该仓库仅用于学习，如有商业用途，请购买官方的 pro 版：https://tinify.com/checkout/web-pro
+1、不要将压缩后的图片重复压缩。
 
-This Repo is only for study. 
+2、不要将本项目用于大量的、资源分发末端的私人存图上。
+
+3、如果处理过的图片超过1000张，最好还是资瓷一下tinypng官方。
+
+4、仅用于学习，如有商业用途，请购买官方的 pro 版：https://tinify.com/checkout/web-pro
