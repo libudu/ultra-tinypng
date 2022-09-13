@@ -36,17 +36,22 @@ const options = {
 
 const taskManager = {
   taskList: [],
+  totalCount: 0,
+  finishCount: 0,
   taskFinish: () => {
     const task = taskManager.taskList.shift();
     if(task) {
       task();
-    } else {
+    }
+    taskManager.finishCount += 1;
+    if(taskManager.finishCount == taskManager.totalCount) {
       console.log("所有任务处理完成！");
       process.openStdin();
     }
   },
   maxParallel: 20,
   start: () => {
+    taskManager.totalCount = taskManager.taskList.length;
     const initCount = taskManager.taskList.slice(0, taskManager.maxParallel).length;
     for(let i = 0; i < initCount; i++) {
       taskManager.taskList.shift()();
