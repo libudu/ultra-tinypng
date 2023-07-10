@@ -49,7 +49,7 @@ const taskManager = {
       process.openStdin();
     }
   },
-  maxParallel: 20,
+  maxParallel: 1,
   start: () => {
     taskManager.totalCount = taskManager.taskList.length;
     const initCount = taskManager.taskList.slice(0, taskManager.maxParallel).length;
@@ -130,7 +130,7 @@ function fileUpload(img) {
     res.on('data', buf => {
       let obj = JSON.parse(buf.toString());
       if (obj.error) {
-        console.log(`[${img}]：压缩失败！报错：${obj.message}`);
+        console.log(`[${img}]：压缩失败！报错：${obj.message}`, (new Date()).toLocaleTimeString());
         taskManager.taskFinish();
       } else {
         fileUpdate(img, obj);
@@ -170,7 +170,7 @@ function fileUpdate(imgpath, obj) {
             obj.output.size
           }，优化比例-${obj.output.ratio}。剩余任务${taskManager.taskList.length}。`
         );
-        taskManager.taskFinish();
+        setTimeout(taskManager.taskFinish, 5000)
       });
     });
   });
